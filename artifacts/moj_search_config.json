@@ -1,0 +1,10 @@
+{
+    "dataset_source": "MOJ Commercial Precedents CSV",
+    "number_of_cases": 20,
+    "model_name": "BAAI/bge-m3",
+    "embedding_dimension": 1024,
+    "normalize_embeddings": true,
+    "faiss_index_type": "IndexFlatIP",
+    "index_filename": "precedents.index",
+    "metadata_filename": "precedents_metadata.parquet"
+}
