@@ -1,0 +1,14 @@
+{
+    "dataset_name": "THIQAH-RD/ALARB",
+    "dataset_split": "train",
+    "number_of_cases": 200,
+    "model_name": "BAAI/bge-m3",
+    "max_sequence_length": 1024,
+    "embedding_dimension": 1024,
+    "normalize_embeddings": true,
+    "faiss_index_type": "IndexFlatIP",
+    "retrieval_fields": [
+        "case_facts",
+        "court_reasoning"
+    ]
+}
