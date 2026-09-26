@@ -15,23 +15,31 @@ st.markdown(
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {background:#0d1323;color:#eee9dd;}
     [data-testid="stHeader"] {background:transparent;}
     [data-testid="stMainBlockContainer"] {max-width:920px;padding-top:3.3rem;padding-bottom:4rem;}
-    html, body, [class*="st-"] {font-family:'Tajawal',sans-serif;}
+    html, body, div[data-testid="stMarkdownContainer"], div[data-testid="stCaptionContainer"], input, button {font-family:'Tajawal',sans-serif;}
+    .material-symbols-rounded, .material-symbols-outlined, .material-icons {font-family:'Material Symbols Rounded'!important;}
     .hero {text-align:center;direction:rtl;padding:2.6rem 0 1.2rem;}
-    .hero h1 {font-family:'Amiri',serif;color:#f1eee5;font-size:5rem;line-height:1.2;margin:0;}
+    .hero h1, .hero h1 * {font-family:'Amiri',serif!important;font-weight:400;color:#f1eee5;font-size:5rem;line-height:1.2;margin:0;}
     .hero p {color:#a8a79f;font-size:1rem;margin:.2rem auto;}
     .eyebrow {color:#caa766;font-size:.8rem;letter-spacing:.05em;}
-    .section-title {direction:rtl;text-align:right;color:#eee9dd;font-family:'Amiri',serif;font-size:2rem;margin:2.3rem 0 .3rem;}
+    .section-title {direction:rtl;text-align:right;color:#eee9dd;font-family:'Amiri',serif!important;font-weight:400;font-size:2rem;margin:2.3rem 0 .3rem;}
     .section-hint {direction:rtl;text-align:right;color:#aaa9a3;margin:0 0 1rem;}
     .divider {border:0;border-top:1px solid #293044;margin:1.8rem 0;}
     .disclaimer {direction:rtl;color:#a8a79f;font-size:.85rem;text-align:center;line-height:1.8;margin-top:3rem;}
     div[data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"]:has(.case-card-marker) {border:1px solid #31384b;border-radius:8px;background:#11192b;padding:.65rem 1rem;}
     .case-card-marker {height:0;overflow:hidden;}
-    div[data-testid="stTextInput"] input {direction:rtl;text-align:right;background:#11192b;color:#f2ecdf;border:1px solid #424a5c;border-radius:4px;}
+    div[data-testid="stTextInput"] input {direction:rtl;text-align:right;background:#11192b;color:#f2ecdf;border:1px solid #424a5c;border-radius:4px;outline:none;box-shadow:none;}
+    div[data-testid="stTextInput"] input:focus {border-color:#d8ba7f!important;outline:none!important;box-shadow:none!important;}
+    div[data-testid="stTextInput"] [data-testid="InputInstructions"] {display:none!important;}
     div[data-testid="stTextInput"] label {direction:rtl;color:#c9c6be;}
     div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {background:#151c2e;color:#d8ba7f;border:1px solid #5c5141;border-radius:4px;}
     div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {border-color:#d8ba7f;color:#f6e3ba;}
     div[data-testid="stMarkdownContainer"] p, div[data-testid="stMarkdownContainer"] h3 {direction:rtl;text-align:right;line-height:1.75;}
     div[data-testid="stExpander"] {direction:rtl;background:#10182a;border:1px solid #323a4b;border-radius:5px;}
+    div[data-testid="stExpander"] summary {direction:rtl;justify-content:flex-start;gap:.6rem;}
+    div[data-testid="stExpander"] summary p {margin:0;white-space:nowrap;}
+    div[data-testid="stExpander"] svg {flex:0 0 auto;}
+    div[data-testid="stExpander"] summary [data-testid="stIconMaterial"], div[data-testid="stExpander"] summary .material-symbols-rounded, div[data-testid="stExpander"] summary .material-symbols-outlined {display:none!important;}
+    div[data-testid="stVerticalBlockBorderWrapper"] h3 {font-size:1.45rem;line-height:1.65;margin:.25rem 0;}
     a {color:#d8ba7f!important;}
     </style>""",
     unsafe_allow_html=True,
@@ -75,7 +83,7 @@ def show_result(hit: dict, number: int) -> None:
         if excerpt:
             st.write((excerpt[:330] + "…") if len(excerpt) > 330 else excerpt)
 
-        with st.expander("عرض تفاصيل الحكم"):
+        with st.expander("تفاصيل الحكم"):
             for label, key in (
                 ("الوقائع", "facts"),
                 ("تسبيب المحكمة", "reasoning"),
