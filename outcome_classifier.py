@@ -1,4 +1,3 @@
-```python
 """Classify Arabic court judgment outcomes."""
 
 from __future__ import annotations
