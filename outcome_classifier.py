@@ -192,4 +192,3 @@ if __name__ == "__main__":
         print(f"Verdict: {verdict}")
         print(f"Category: {category}")
         print("-" * 60)
-```
