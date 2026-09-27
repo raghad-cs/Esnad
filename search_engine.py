@@ -1,4 +1,3 @@
-```python
 """Unified semantic search across Esnad's ALARB and MOJ judgment indexes."""
 
 from __future__ import annotations
