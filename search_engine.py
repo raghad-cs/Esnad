@@ -245,4 +245,3 @@ if __name__ == "__main__":
             item["title"],
             item["outcome_category"],
         )
-```
