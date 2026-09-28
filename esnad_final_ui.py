@@ -280,7 +280,7 @@ with search_column:
     )
     submitted = st.button("ابحث في الأحكام", use_container_width=True)
 
-st.markdown('<div class="examples-title">جرّبي البحث عن:</div>', unsafe_allow_html=True)
+st.markdown('<div class="examples-title">جرّب البحث عن:</div>', unsafe_allow_html=True)
 example_columns = st.columns(2)
 for index, example in enumerate(EXAMPLES):
     if example_columns[index % 2].button(example, key=f"sample_{index}", use_container_width=True):
