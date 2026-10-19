@@ -1,7 +1,7 @@
 {
     "dataset_name": "THIQAH-RD/ALARB",
     "dataset_split": "train",
-    "number_of_cases": 200,
+    "number_of_cases": 6000,
     "model_name": "BAAI/bge-m3",
     "max_sequence_length": 1024,
     "embedding_dimension": 1024,

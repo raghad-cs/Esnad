@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
+from alarb_artifacts import load_alarb_artifacts
 from outcome_classifier import classify_outcome
 
 
@@ -23,11 +24,7 @@ class LegalSearchEngine:
         moj_dir = root / "artifacts"
 
         self.sources = {
-            "ALARB": self._load_source(
-                alarb_dir / "alarb_judgments_200.index",
-                alarb_dir / "alarb_judgments_metadata_200.parquet",
-                alarb_dir / "alarb_search_config.json",
-            ),
+            "ALARB": load_alarb_artifacts(alarb_dir),
             "MOJ": self._load_source(
                 moj_dir / "precedents.index",
                 moj_dir / "precedents_metadata.parquet",
@@ -56,7 +53,7 @@ class LegalSearchEngine:
         self.model = SentenceTransformer(model_names.pop())
 
         # Match the ALARB index build settings.
-        self.model.max_seq_length = 1024
+        self.model.max_seq_length = self.sources["ALARB"][2]["max_sequence_length"]
 
         if self.model.get_embedding_dimension() != dimensions.pop():
             raise ValueError(
