@@ -2,27 +2,18 @@
 
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 from typing import Any
 
-import faiss
-import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer
+
+from alarb_artifacts import load_alarb_artifacts
 
 
 class AlarbSearchEngine:
     """Load the saved ALARB artifacts and search them with BGE-M3."""
-
-    REQUIRED_METADATA_COLUMNS = {
-        "case_id",
-        "case_facts",
-        "court_reasoning",
-        "applicable_laws",
-        "verdict",
-    }
 
     def __init__(self, artifact_dir: str | Path | None = None) -> None:
         project_dir = Path(__file__).resolve().parent
@@ -32,20 +23,9 @@ class AlarbSearchEngine:
             else project_dir / "artifacts" / "alarb"
         )
 
-        self.index_path = self.artifact_dir / "alarb_judgments_200.index"
-        self.metadata_path = (
-            self.artifact_dir / "alarb_judgments_metadata_200.parquet"
+        self.index, self.metadata, self.config = load_alarb_artifacts(
+            self.artifact_dir
         )
-        self.config_path = self.artifact_dir / "alarb_search_config.json"
-
-        self._validate_artifact_files()
-
-        with self.config_path.open("r", encoding="utf-8") as config_file:
-            self.config = json.load(config_file)
-
-        self.index = faiss.read_index(str(self.index_path))
-        self.metadata = pd.read_parquet(self.metadata_path)
-        self._validate_artifact_contents()
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = SentenceTransformer(
@@ -63,44 +43,6 @@ class AlarbSearchEngine:
             raise ValueError(
                 "Model and index dimensions do not match: "
                 f"model={model_dimension}, expected={expected_dimension}."
-            )
-
-    def _validate_artifact_files(self) -> None:
-        missing_files = [
-            path.name
-            for path in (
-                self.index_path,
-                self.metadata_path,
-                self.config_path,
-            )
-            if not path.exists()
-        ]
-        if missing_files:
-            raise FileNotFoundError(
-                "Missing ALARB artifact files: " + ", ".join(missing_files)
-            )
-
-    def _validate_artifact_contents(self) -> None:
-        missing_columns = (
-            self.REQUIRED_METADATA_COLUMNS - set(self.metadata.columns)
-        )
-        if missing_columns:
-            raise ValueError(
-                "Metadata is missing required columns: "
-                + ", ".join(sorted(missing_columns))
-            )
-
-        if self.index.ntotal != len(self.metadata):
-            raise ValueError(
-                "FAISS index and metadata row counts do not match: "
-                f"index={self.index.ntotal}, metadata={len(self.metadata)}."
-            )
-
-        expected_dimension = self.config["embedding_dimension"]
-        if self.index.d != expected_dimension:
-            raise ValueError(
-                "FAISS index dimension does not match the configuration: "
-                f"index={self.index.d}, expected={expected_dimension}."
             )
 
     def search(self, query: str, top_k: int = 5) -> dict[str, Any]:
