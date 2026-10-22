@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from html import escape
+import hashlib
+import os
 
 import streamlit as st
 
@@ -163,6 +165,25 @@ st.markdown(
         line-height: 1.8;
         margin-top: 3rem;
     }
+    .plans-heading {direction:rtl;text-align:center;margin:0 auto 1.6rem;}
+    .plans-heading h2 {font-family:'Amiri',serif!important;font-size:2.2rem;color:#f1eee5;margin:.4rem 0;}
+    .plans-heading p {text-align:center!important;color:#a8afbd;font-size:.95rem;}
+    .plans-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;direction:rtl;}
+    .plan-card {background:linear-gradient(145deg,#151e31,#101829);border:1px solid #303c52;border-radius:20px;padding:26px 22px;position:relative;direction:rtl;text-align:right;}
+    .plan-card.featured {border-color:#caa766;background:linear-gradient(145deg,#222535,#141c2e);box-shadow:0 12px 36px #00000025;}
+    .plan-kicker {color:#a7afbf;font-size:.8rem;margin-bottom:14px;}
+    .plan-name {font-size:1.25rem;font-weight:700;color:#f1eee5;margin-bottom:10px;}
+    .plan-description {color:#a7afbf;font-size:.88rem;line-height:1.8;min-height:52px;}
+    .plan-price {color:#f2e5cb;font-family:'Tajawal',sans-serif;font-size:2.7rem;font-weight:700;line-height:1.3;margin:20px 0 3px;}
+    .plan-price small {font-size:.8rem;font-weight:400;color:#afb5c2;}
+    .plan-annual {color:#caa766;font-size:.85rem;min-height:36px;}
+    .plan-rule {border-top:1px solid #343c4f;margin:18px 0;}
+    .plan-feature {color:#d2d6df;font-size:.88rem;line-height:1.85;margin:10px 0;}
+    .plan-feature::before {content:'✓';color:#caa766;margin-left:9px;}
+    .plan-tag {display:inline-block;color:#ddbf87;background:#caa76615;border:1px solid #caa76655;border-radius:20px;padding:4px 12px;font-size:.75rem;margin-top:16px;}
+    .plans-note {direction:rtl;text-align:center!important;color:#929bad;font-size:.85rem;line-height:1.8;margin:22px 0 14px;}
+    .hero p {text-align:center!important;}
+    @media(max-width:700px) {.plans-grid {grid-template-columns:1fr;} .plan-description {min-height:0;}}
     a {color: #d8ba7f !important;}
     </style>
     """,
@@ -192,6 +213,48 @@ RESULT_LABELS = {
     4: "النتيجة الرابعة",
     5: "النتيجة الخامسة",
 }
+
+# Public interest form; deployments may override it with the environment variable.
+INTEREST_FORM_URL = os.environ.get(
+    "ESNAD_INTEREST_FORM_URL",
+    "https://docs.google.com/forms/d/e/1FAIpQLSeBk0dC1jnbgXCh_IrQvop5Oww8VsPzApFfrIWW4pXNxVx9ow/viewform?usp=publish-editor",
+).strip()
+FREE_JUDGMENT_LIMIT = 2
+
+
+def interest_button(key: str) -> None:
+    if INTEREST_FORM_URL.startswith("https://"):
+        st.link_button("سجّل اهتمامك بالاشتراك", INTEREST_FORM_URL,
+                       use_container_width=True)
+    else:
+        st.button("سجّل اهتمامك بالاشتراك", key=key, disabled=True,
+                  use_container_width=True)
+        st.caption("سيُتاح تسجيل الاهتمام قريبًا؛ رابط النموذج قيد التجهيز.")
+    st.caption("تسجيل اهتمام فقط، دون دفع أو التزام بالشراء.")
+
+
+def judgment_id(hit: dict) -> str:
+    """Use a source-scoped ID; never identify a judgment by result position."""
+    source = content(hit.get("source"))
+    case_id = content(hit.get("case_id"))
+    if case_id:
+        return hashlib.sha256(f"{source}|{case_id}".encode()).hexdigest()
+    # A dataset landing URL alone is not a unique judgment identifier.
+    payload = "|".join(content(hit.get(key)) for key in
+                       ("source", "title", "facts", "reasoning", "verdict"))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def show_plans() -> None:
+    st.markdown('''<div id="plans" class="plans-heading"><div class="eyebrow">باقات إسناد</div><h2>ابدأ بالبحث، وتعمّق في التفاصيل</h2><p>خيارات تناسب المحامي الفرد وفريق المكتب</p></div>
+<div class="plans-grid">
+<div class="plan-card"><div class="plan-kicker">اكتشف إسناد</div><div class="plan-name">المجاني</div><div class="plan-description">جرّب البحث في الأحكام التجارية وتعرّف على النتائج الأقرب لقضيتك.</div><div class="plan-price">مجانًا</div><div class="plan-annual">ابدأ التجربة دون دفع</div><div class="plan-rule"></div><div class="plan-feature">البحث بوصف القضية</div><div class="plan-feature">معاينة مقتطفات الأحكام</div><div class="plan-feature">التصنيف والفلترة حسب اتجاه الحكم</div><div class="plan-feature">تفاصيل حكمين خلال الجلسة الحالية</div><div class="plan-tag">متاح الآن</div></div>
+<div class="plan-card featured"><div class="plan-kicker">للبحث الفردي المتعمّق</div><div class="plan-name">المحامي الفرد</div><div class="plan-description">وصول إلى تفاصيل أحكام إضافية لدعم البحث في قضيتك التجارية.</div><div class="plan-price">60 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 598 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">جميع مزايا التجربة المجانية</div><div class="plan-feature">فتح تفاصيل أحكام إضافية</div><div class="plan-feature">الوقائع والتسبيب ومنطوق الحكم</div><div class="plan-feature">المواد القانونية المتاحة</div><div class="plan-tag">قريبًا</div></div>
+<div class="plan-card"><div class="plan-kicker">للمكاتب الناشئة والصغيرة</div><div class="plan-name">مكتب المحاماة</div><div class="plan-description">باقة مخططة تجمع فريق المكتب في اشتراك واحد للبحث القضائي.</div><div class="plan-price">199 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 1,990 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">حتى 5 مستخدمين</div><div class="plan-feature">مزايا الباقة الفردية للفريق</div><div class="plan-feature">حساب مستقل لكل مستخدم</div><div class="plan-feature">مخصصة للعمل داخل المكتب</div><div class="plan-tag">قريبًا · باقة مخططة</div></div>
+</div><p class="plans-note">الاشتراكات قيد التجهيز. سجّل اهتمامك لنخبرك عند الإطلاق، دون دفع أو التزام بالشراء.</p>''', unsafe_allow_html=True)
+    _, action_column, _ = st.columns([1, 2, 1])
+    with action_column:
+        interest_button("plans_interest")
 
 
 @st.cache_resource(show_spinner=False)
@@ -233,7 +296,24 @@ def show_result(hit: dict, number: int) -> None:
         if excerpt:
             st.write((excerpt[:330] + "…") if len(excerpt) > 330 else excerpt)
 
-        with st.expander("تفاصيل الحكم"):
+        identity = judgment_id(hit)
+        opened = st.session_state.opened_judgments
+        if identity not in opened:
+            if len(opened) >= FREE_JUDGMENT_LIMIT:
+                st.markdown("**اطّلعت على تفاصيل حكمين مجانًا**")
+                st.write("سجّل اهتمامك وسنتواصل معك عند إطلاق الاشتراك للوصول إلى تفاصيل أحكام إضافية.")
+                interest_button(f"interest_{identity}_{number}")
+                return
+            remaining = FREE_JUDGMENT_LIMIT - len(opened)
+            st.caption(f"متبقي للاطلاع المجاني: {remaining} من الأحكام خلال هذه الجلسة.")
+            if st.button("فتح تفاصيل الحكم مجانًا", key=f"unlock_{identity}_{number}",
+                         use_container_width=True):
+                # Count only explicit opens, not rendering or expanding a card.
+                st.session_state.opened_judgments = opened | {identity}
+                st.rerun()
+            return
+
+        with st.expander("تفاصيل الحكم — متاحة لك", expanded=True):
             for field_label, key in (
                 ("الوقائع", "facts"),
                 ("تسبيب المحكمة", "reasoning"),
@@ -269,6 +349,8 @@ if "query_text" not in st.session_state:
     st.session_state.query_text = ""
 if "selected_outcome" not in st.session_state:
     st.session_state.selected_outcome = "all"
+if "opened_judgments" not in st.session_state:
+    st.session_state.opened_judgments = set()
 
 left_space, search_column, right_space = st.columns([1, 8, 1])
 with search_column:
@@ -280,7 +362,7 @@ with search_column:
     )
     submitted = st.button("ابحث في الأحكام", use_container_width=True)
 
-st.markdown('<div class="examples-title">جرّبي البحث عن:</div>', unsafe_allow_html=True)
+st.markdown('<div class="examples-title">جرّب البحث عن:</div>', unsafe_allow_html=True)
 example_columns = st.columns(2)
 for index, example in enumerate(EXAMPLES):
     if example_columns[index % 2].button(example, key=f"sample_{index}", use_container_width=True):
@@ -294,12 +376,17 @@ if submitted:
 query = st.session_state.get("active_query", "")
 if query:
     try:
-        with st.spinner("جاري البحث في الأحكام… قد يستغرق تحميل النموذج وقتًا عند أول تشغيل"):
-            response = load_engine().search(query, top_k=5)
+        # Reuse results when opening details, changing filters, or showing plans.
+        if st.session_state.get("response_query") != query:
+            with st.spinner("جاري البحث في الأحكام… قد يستغرق تحميل النموذج وقتًا عند أول تشغيل"):
+                fresh_response = load_engine().search(query, top_k=5)
+            st.session_state.search_response = fresh_response
+            st.session_state.response_query = query
+        response = st.session_state.search_response
     except (FileNotFoundError, ValueError) as exc:
         st.error(f"تعذر تشغيل البحث: {exc}")
     except Exception:
-        st.error("تعذر إكمال البحث. تحققي من تثبيت المكتبات وملفات الفهرسة، ثم حاولي مرة أخرى.")
+        st.error("تعذر إكمال البحث. يرجى التحقق من تثبيت المكتبات وملفات الفهرسة، ثم المحاولة مرة أخرى.")
     else:
         results = response.get("results", [])
         st.markdown('<hr class="divider">', unsafe_allow_html=True)
@@ -358,6 +445,9 @@ if query:
             show_result(hit, number)
         if not filtered_results:
             st.info("لا توجد نتائج ضمن هذا التصنيف.")
+
+st.markdown('<hr class="divider">', unsafe_allow_html=True)
+show_plans()
 
 st.markdown(
     '<div class="disclaimer">إسناد أداة للبحث والاطلاع على أحكام منشورة. '
