@@ -1,0 +1,11 @@
+{
+  "dataset": "ArabiCCR",
+  "model_name": "BAAI/bge-m3",
+  "embedding_dimension": 1024,
+  "max_sequence_length": 3000,
+  "normalize_embeddings": true,
+  "similarity_metric": "inner_product",
+  "number_of_judgments": 12477,
+  "number_of_chunks": 15532,
+  "chunk_overlap_tokens": 200
+}

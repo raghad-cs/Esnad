@@ -6,10 +6,12 @@ from collections import Counter
 from html import escape
 import hashlib
 import os
+import re
 
 import streamlit as st
 
 from search_engine import LegalSearchEngine
+from dispute_classifier import DISPUTE_LABELS
 
 
 st.set_page_config(
@@ -37,6 +39,7 @@ st.markdown(
     div[data-testid="stCaptionContainer"], input, button {
         font-family: 'Tajawal', sans-serif;
     }
+    div[data-testid="stCaptionContainer"] {direction: rtl; text-align: right;}
     .hero {text-align: center; direction: rtl; padding: 2.6rem 0 1.5rem;}
     .hero h1 {
         font-family: 'Amiri', 'Traditional Arabic', serif !important;
@@ -131,16 +134,34 @@ st.markdown(
     .case-card-marker {height: 0; overflow: hidden;}
     .outcome-badge {
         direction: rtl;
-        display: inline-block;
+        display: block;
+        width: fit-content;
         background: rgba(202, 167, 102, .12);
         color: #d8ba7f;
         border: 1px solid rgba(202, 167, 102, .45);
         border-radius: 20px;
         padding: .28rem .75rem;
-        margin: .25rem 0 .65rem;
+        margin: .25rem 0 .65rem auto;
         font-size: .88rem;
         font-weight: 500;
     }
+    .dispute-badges {
+        direction: rtl;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: .4rem;
+        margin: .15rem 0 .75rem;
+    }
+    .dispute-badge {
+        color: #b9c5da;
+        background: rgba(84, 107, 145, .14);
+        border: 1px solid rgba(112, 136, 176, .35);
+        border-radius: 18px;
+        padding: .22rem .62rem;
+        font-size: .78rem;
+    }
+    div[data-testid="stSelectbox"] {direction: rtl; text-align: right;}
     div[data-testid="stMarkdownContainer"] p,
     div[data-testid="stMarkdownContainer"] h3 {
         direction: rtl;
@@ -156,6 +177,54 @@ st.markdown(
     div[data-testid="stExpander"] summary {direction: rtl; justify-content: flex-start; gap: .6rem;}
     div[data-testid="stExpander"] summary p {margin: 0; white-space: nowrap;}
     div[data-testid="stExpander"] summary [data-testid="stIconMaterial"] {display: none !important;}
+    .judgment-meta-grid {
+        direction: rtl;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .75rem;
+        margin: .7rem 0 1.25rem;
+    }
+    .judgment-meta-item {
+        background: #0d1526;
+        border: 1px solid #2d384d;
+        border-radius: 10px;
+        padding: .8rem .9rem;
+        text-align: right;
+        min-height: 70px;
+    }
+    .judgment-meta-label {
+        display: block;
+        color: #9299a8;
+        font-size: .78rem;
+        margin-bottom: .28rem;
+    }
+    .judgment-meta-value {
+        display: block;
+        color: #eee9dd;
+        font-size: .98rem;
+        font-weight: 600;
+        line-height: 1.6;
+    }
+    .judgment-section {
+        direction: rtl;
+        text-align: right;
+        border-top: 1px solid #2d384d;
+        padding: 1.25rem 0 .4rem;
+        margin-top: .35rem;
+    }
+    .judgment-section-title {
+        color: #f0ece2;
+        font-size: 1.28rem;
+        font-weight: 700;
+        margin-bottom: .65rem;
+    }
+    .judgment-section-text {
+        color: #ddd9d0;
+        font-size: 1rem;
+        line-height: 2;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
     div[data-testid="stVerticalBlockBorderWrapper"] h3 {font-size: 1.45rem; line-height: 1.65; margin: .25rem 0;}
     .disclaimer {
         direction: rtl;
@@ -183,7 +252,11 @@ st.markdown(
     .plan-tag {display:inline-block;color:#ddbf87;background:#caa76615;border:1px solid #caa76655;border-radius:20px;padding:4px 12px;font-size:.75rem;margin-top:16px;}
     .plans-note {direction:rtl;text-align:center!important;color:#929bad;font-size:.85rem;line-height:1.8;margin:22px 0 14px;}
     .hero p {text-align:center!important;}
-    @media(max-width:700px) {.plans-grid {grid-template-columns:1fr;} .plan-description {min-height:0;}}
+    @media(max-width:700px) {
+        .plans-grid {grid-template-columns:1fr;}
+        .plan-description {min-height:0;}
+        .judgment-meta-grid {grid-template-columns:1fr;}
+    }
     a {color: #d8ba7f !important;}
     </style>
     """,
@@ -249,7 +322,7 @@ def show_plans() -> None:
     st.markdown('''<div id="plans" class="plans-heading"><div class="eyebrow">باقات إسناد</div><h2>ابدأ بالبحث، وتعمّق في التفاصيل</h2><p>خيارات تناسب المحامي الفرد وفريق المكتب</p></div>
 <div class="plans-grid">
 <div class="plan-card"><div class="plan-kicker">اكتشف إسناد</div><div class="plan-name">المجاني</div><div class="plan-description">جرّب البحث في الأحكام التجارية وتعرّف على النتائج الأقرب لقضيتك.</div><div class="plan-price">مجانًا</div><div class="plan-annual">ابدأ التجربة دون دفع</div><div class="plan-rule"></div><div class="plan-feature">البحث بوصف القضية</div><div class="plan-feature">معاينة مقتطفات الأحكام</div><div class="plan-feature">التصنيف والفلترة حسب اتجاه الحكم</div><div class="plan-feature">تفاصيل حكمين خلال الجلسة الحالية</div><div class="plan-tag">متاح الآن</div></div>
-<div class="plan-card featured"><div class="plan-kicker">للبحث الفردي المتعمّق</div><div class="plan-name">المحامي الفرد</div><div class="plan-description">وصول إلى تفاصيل أحكام إضافية لدعم البحث في قضيتك التجارية.</div><div class="plan-price">60 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 598 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">جميع مزايا التجربة المجانية</div><div class="plan-feature">فتح تفاصيل أحكام إضافية</div><div class="plan-feature">الوقائع والتسبيب ومنطوق الحكم</div><div class="plan-feature">المواد القانونية المتاحة</div><div class="plan-tag">قريبًا</div></div>
+<div class="plan-card featured"><div class="plan-kicker">للبحث الفردي المتعمّق</div><div class="plan-name">المحامي الفرد</div><div class="plan-description">وصول إلى تفاصيل أحكام إضافية لدعم البحث في قضيتك التجارية.</div><div class="plan-price">45 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 450 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">جميع مزايا التجربة المجانية</div><div class="plan-feature">فتح تفاصيل أحكام إضافية</div><div class="plan-feature">الوقائع والتسبيب ومنطوق الحكم</div><div class="plan-feature">المواد القانونية المتاحة</div><div class="plan-tag">قريبًا</div></div>
 <div class="plan-card"><div class="plan-kicker">للمكاتب الناشئة والصغيرة</div><div class="plan-name">مكتب المحاماة</div><div class="plan-description">باقة مخططة تجمع فريق المكتب في اشتراك واحد للبحث القضائي.</div><div class="plan-price">199 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 1,990 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">حتى 5 مستخدمين</div><div class="plan-feature">مزايا الباقة الفردية للفريق</div><div class="plan-feature">حساب مستقل لكل مستخدم</div><div class="plan-feature">مخصصة للعمل داخل المكتب</div><div class="plan-tag">قريبًا · باقة مخططة</div></div>
 </div><p class="plans-note">الاشتراكات قيد التجهيز. سجّل اهتمامك لنخبرك عند الإطلاق، دون دفع أو التزام بالشراء.</p>''', unsafe_allow_html=True)
     _, action_column, _ = st.columns([1, 2, 1])
@@ -271,33 +344,156 @@ def content(value: object) -> str:
     return str(value).strip()
 
 
+def clean_display_text(value: object) -> str:
+    """Clean display artifacts without summarizing or changing legal content."""
+    text = content(value).replace("⏎", "\n").replace("[Person Name]", "اسم محجوب")
+    section_markers = {"الوقائع", "الأسباب", "الاسباب", "منطوق الحكم"}
+    lines = []
+    for raw_line in text.splitlines():
+        line = " ".join(raw_line.split())
+        if not line or line.strip("()[]{} ") in section_markers:
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def clean_verdict_text(value: object) -> str:
+    """Keep the court's decision and remove document signatures/closings."""
+    text = content(value).replace("⏎", "\n").replace("[Person Name]", "اسم محجوب")
+    raw_lines = [" ".join(line.split()) for line in text.splitlines() if line.strip()]
+
+    decision_markers = {"منطوق الحكم", "نص الحكم:", "نص الحكم", "لذلك"}
+    marker_positions = [
+        index for index, line in enumerate(raw_lines)
+        if line.strip("()[]{} ") in decision_markers
+    ]
+    if marker_positions:
+        raw_lines = raw_lines[marker_positions[-1] + 1:]
+
+    signature_markers = (
+        "أمين السر", "امين السر", "رئيس الدائرة", "رئيس الدائرة القضائية",
+        "القاضي", "العضو الأول", "العضو الثاني", "عضو الدائرة", "عضو",
+    )
+    kept_lines = []
+    for line in raw_lines:
+        marker = line.strip("()[]{}.، ")
+        if (
+            any(marker.startswith(item) for item in signature_markers)
+            or "أمين السر" in marker
+            or "امين السر" in marker
+            or "رئيس الدائرة" in marker
+        ):
+            break
+        if not marker or set(marker) <= {".", "…"}:
+            continue
+        line = re.sub(
+            r"(?:[،,]\s*)?(?:وب\s*(?:الله|اللـه|ﷲ)\s+التوفيق|والله الموفق|وصلى (?:الله|اللـه|ﷲ)).*$",
+            "",
+            line,
+        ).strip(" ،,.")
+        line = re.sub(
+            r"\s+(?:أمين السر|امين السر|رئيس الدائرة|رئيس الدائرة القضائية|عضو)\b.*$",
+            "",
+            line,
+        ).strip(" ،,.")
+        if line:
+            kept_lines.append(line)
+    return "\n".join(kept_lines)
+
+
+def render_metadata(hit: dict) -> None:
+    judgment_number = content(hit.get("judgment_number"))
+    case_number = content(hit.get("case_number"))
+    items = []
+    if judgment_number and judgment_number == case_number:
+        items.append(("رقم الحكم والقضية", judgment_number))
+    else:
+        if judgment_number:
+            items.append(("رقم الحكم", judgment_number))
+        if case_number:
+            items.append(("رقم القضية", case_number))
+    for label, key in (
+        ("تاريخ الحكم", "judgment_date"),
+        ("المدينة", "city"),
+        ("المحكمة", "court"),
+    ):
+        value = content(hit.get(key))
+        if value:
+            items.append((label, value))
+
+    if not items:
+        return
+    cards = "".join(
+        '<div class="judgment-meta-item">'
+        f'<span class="judgment-meta-label">{escape(label)}</span>'
+        f'<span class="judgment-meta-value">{escape(value)}</span>'
+        '</div>'
+        for label, value in items
+    )
+    st.markdown(
+        f'<div class="judgment-meta-grid">{cards}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_judgment_section(title: str, value: object) -> None:
+    text = clean_verdict_text(value) if title == "الحكم" else clean_display_text(value)
+    if not text:
+        return
+    st.markdown(
+        '<section class="judgment-section">'
+        f'<div class="judgment-section-title">{escape(title)}</div>'
+        f'<div class="judgment-section-text">{escape(text)}</div>'
+        '</section>',
+        unsafe_allow_html=True,
+    )
+
+
 def result_label(number: int) -> str:
     return RESULT_LABELS.get(number, f"النتيجة رقم {number}")
 
 
 def show_result(hit: dict, number: int) -> None:
-    source = "وزارة العدل" if hit.get("source") == "MOJ" else "مجموعة ALARB"
+    source = "الأحكام التجارية السعودية"
     label = result_label(number)
-    title = content(hit.get("title")) or f"حكم تجاري · {label}"
+    judgment_number = content(hit.get("judgment_number"))
     facts = content(hit.get("facts"))
     summary = content(hit.get("summary"))
     outcome_category = hit.get("outcome_category", "other")
     outcome_label = OUTCOME_LABELS.get(outcome_category, OUTCOME_LABELS["other"])
+    dispute_labels = [
+        DISPUTE_LABELS[item]
+        for item in hit.get("dispute_types", [])
+        if item in DISPUTE_LABELS
+    ]
 
     with st.container(border=True):
         st.markdown('<span class="case-card-marker"></span>', unsafe_allow_html=True)
-        st.caption(f"{source}  ·  {label}")
+        st.caption(source)
         st.markdown(
             f'<div class="outcome-badge">اتجاه الحكم: {outcome_label}</div>',
             unsafe_allow_html=True,
         )
-        st.subheader(title)
-        excerpt = summary or facts
-        if excerpt:
-            st.write((excerpt[:330] + "…") if len(excerpt) > 330 else excerpt)
-
+        if dispute_labels:
+            badges = "".join(
+                f'<span class="dispute-badge">{escape(label)}</span>'
+                for label in dispute_labels
+            )
+            st.markdown(
+                f'<div class="dispute-badges">{badges}</div>',
+                unsafe_allow_html=True,
+            )
+        st.subheader(label)
+        result_description = "حكم تجاري"
+        if judgment_number:
+            result_description += f"  ·  رقم الحكم: {judgment_number}"
+        st.caption(result_description)
         identity = judgment_id(hit)
         opened = st.session_state.opened_judgments
+        excerpt = summary or facts
+        if excerpt and identity not in opened:
+            st.write((excerpt[:330] + "…") if len(excerpt) > 330 else excerpt)
+
         if identity not in opened:
             if len(opened) >= FREE_JUDGMENT_LIMIT:
                 st.markdown("**اطّلعت على تفاصيل حكمين مجانًا**")
@@ -314,26 +510,18 @@ def show_result(hit: dict, number: int) -> None:
             return
 
         with st.expander("تفاصيل الحكم — متاحة لك", expanded=True):
-            for field_label, key in (
+            st.markdown("**بيانات الحكم**")
+            render_metadata(hit)
+            for section_title, key in (
                 ("الوقائع", "facts"),
                 ("تسبيب المحكمة", "reasoning"),
                 ("الحكم", "verdict"),
                 ("المواد المذكورة", "applicable_laws"),
             ):
-                value = content(hit.get(key))
-                if value:
-                    st.markdown(f"**{field_label}**")
-                    st.write(value)
+                render_judgment_section(section_title, hit.get(key))
 
             source_url = content(hit.get("source_url"))
-            if hit.get("source") == "ALARB":
-                case_id = content(hit.get("case_id"))
-                if case_id:
-                    st.caption("رقم القضية في مجموعة البيانات، وليس رقم الحكم الرسمي:")
-                    st.write(case_id)
-                if source_url:
-                    st.link_button("الاطلاع على مجموعة البيانات", source_url)
-            elif source_url:
+            if source_url:
                 st.link_button("فتح المصدر", source_url)
             else:
                 st.caption("رابط الحكم المباشر غير متوفر في البيانات الحالية.")
@@ -349,6 +537,8 @@ if "query_text" not in st.session_state:
     st.session_state.query_text = ""
 if "selected_outcome" not in st.session_state:
     st.session_state.selected_outcome = "all"
+if "selected_dispute" not in st.session_state:
+    st.session_state.selected_dispute = "all"
 if "opened_judgments" not in st.session_state:
     st.session_state.opened_judgments = set()
 
@@ -375,13 +565,34 @@ if submitted:
 
 query = st.session_state.get("active_query", "")
 if query:
+    st.markdown(
+        '<div class="filters-title">فلترة البحث حسب نوع النزاع:</div>',
+        unsafe_allow_html=True,
+    )
+    dispute_options = ["all", *DISPUTE_LABELS]
+    st.selectbox(
+        "نوع النزاع",
+        options=dispute_options,
+        format_func=lambda value: (
+            "كل أنواع النزاع" if value == "all" else DISPUTE_LABELS[value]
+        ),
+        key="selected_dispute",
+        label_visibility="collapsed",
+    )
+    st.caption("نوع النزاع تصنيف آلي استرشادي مستخلص من وقائع الحكم وتسبيبه.")
+    selected_dispute = st.session_state.selected_dispute
+    response_key = (query, selected_dispute)
     try:
         # Reuse results when opening details, changing filters, or showing plans.
-        if st.session_state.get("response_query") != query:
+        if st.session_state.get("response_key") != response_key:
             with st.spinner("جاري البحث في الأحكام… قد يستغرق تحميل النموذج وقتًا عند أول تشغيل"):
-                fresh_response = load_engine().search(query, top_k=5)
+                fresh_response = load_engine().search(
+                    query,
+                    top_k=5,
+                    dispute_type=None if selected_dispute == "all" else selected_dispute,
+                )
             st.session_state.search_response = fresh_response
-            st.session_state.response_query = query
+            st.session_state.response_key = response_key
         response = st.session_state.search_response
     except (FileNotFoundError, ValueError) as exc:
         st.error(f"تعذر تشغيل البحث: {exc}")
