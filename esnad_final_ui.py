@@ -303,7 +303,6 @@ def interest_button(key: str) -> None:
         st.button("سجّل اهتمامك بالاشتراك", key=key, disabled=True,
                   use_container_width=True)
         st.caption("سيُتاح تسجيل الاهتمام قريبًا؛ رابط النموذج قيد التجهيز.")
-    st.caption("تسجيل اهتمام فقط، دون دفع أو التزام بالشراء.")
 
 
 def judgment_id(hit: dict) -> str:
@@ -324,7 +323,7 @@ def show_plans() -> None:
 <div class="plan-card"><div class="plan-kicker">اكتشف إسناد</div><div class="plan-name">المجاني</div><div class="plan-description">جرّب البحث في الأحكام التجارية وتعرّف على النتائج الأقرب لقضيتك.</div><div class="plan-price">مجانًا</div><div class="plan-annual">ابدأ التجربة دون دفع</div><div class="plan-rule"></div><div class="plan-feature">البحث بوصف القضية</div><div class="plan-feature">معاينة مقتطفات الأحكام</div><div class="plan-feature">التصنيف والفلترة حسب اتجاه الحكم</div><div class="plan-feature">تفاصيل حكمين خلال الجلسة الحالية</div><div class="plan-tag">متاح الآن</div></div>
 <div class="plan-card featured"><div class="plan-kicker">للبحث الفردي المتعمّق</div><div class="plan-name">المحامي الفرد</div><div class="plan-description">وصول إلى تفاصيل أحكام إضافية لدعم البحث في قضيتك التجارية.</div><div class="plan-price">45 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 450 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">جميع مزايا التجربة المجانية</div><div class="plan-feature">فتح تفاصيل أحكام إضافية</div><div class="plan-feature">الوقائع والتسبيب ومنطوق الحكم</div><div class="plan-feature">المواد القانونية المتاحة</div><div class="plan-tag">قريبًا</div></div>
 <div class="plan-card"><div class="plan-kicker">للمكاتب الناشئة والصغيرة</div><div class="plan-name">مكتب المحاماة</div><div class="plan-description">باقة مخططة تجمع فريق المكتب في اشتراك واحد للبحث القضائي.</div><div class="plan-price">199 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 1,990 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">حتى 5 مستخدمين</div><div class="plan-feature">مزايا الباقة الفردية للفريق</div><div class="plan-feature">حساب مستقل لكل مستخدم</div><div class="plan-feature">مخصصة للعمل داخل المكتب</div><div class="plan-tag">قريبًا · باقة مخططة</div></div>
-</div><p class="plans-note">الاشتراكات قيد التجهيز. سجّل اهتمامك لنخبرك عند الإطلاق، دون دفع أو التزام بالشراء.</p>''', unsafe_allow_html=True)
+</div>''', unsafe_allow_html=True)
     _, action_column, _ = st.columns([1, 2, 1])
     with action_column:
         interest_button("plans_interest")
