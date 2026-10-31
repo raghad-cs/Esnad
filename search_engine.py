@@ -70,8 +70,13 @@ class LegalSearchEngine:
         verdict = self._value(row, "RULING")
         saved_outcome = self._value(row, "outcome_v3")
         outcome_category = self._saved_outcome_category(saved_outcome)
-        if outcome_category is None:
-            outcome_category = classify_outcome(verdict)
+        # Some audited rows are stored under a broad "other" label even when
+        # the ruling text contains an explicit outcome. In that case, prefer
+        # the specific result detected from the ruling itself.
+        if outcome_category in (None, "other"):
+            inferred_outcome = classify_outcome(verdict)
+            if inferred_outcome != "other" or outcome_category is None:
+                outcome_category = inferred_outcome
 
         title = "حكم تجاري"
         if judgment_number is not None:

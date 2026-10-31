@@ -251,6 +251,7 @@ st.markdown(
     .plan-feature::before {content:'✓';color:#caa766;margin-left:9px;}
     .plan-tag {display:inline-block;color:#ddbf87;background:#caa76615;border:1px solid #caa76655;border-radius:20px;padding:4px 12px;font-size:.75rem;margin-top:16px;}
     .plans-note {direction:rtl;text-align:center!important;color:#929bad;font-size:.85rem;line-height:1.8;margin:22px 0 14px;}
+    .plans-action-spacer {height:1.8rem;}
     .hero p {text-align:center!important;}
     @media(max-width:700px) {
         .plans-grid {grid-template-columns:1fr;}
@@ -324,6 +325,7 @@ def show_plans() -> None:
 <div class="plan-card featured"><div class="plan-kicker">للبحث الفردي المتعمّق</div><div class="plan-name">المحامي الفرد</div><div class="plan-description">وصول إلى تفاصيل أحكام إضافية لدعم البحث في قضيتك التجارية.</div><div class="plan-price">45 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 450 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">جميع مزايا التجربة المجانية</div><div class="plan-feature">فتح تفاصيل أحكام إضافية</div><div class="plan-feature">الوقائع والتسبيب ومنطوق الحكم</div><div class="plan-feature">المواد القانونية المتاحة</div><div class="plan-tag">قريبًا</div></div>
 <div class="plan-card"><div class="plan-kicker">للمكاتب الناشئة والصغيرة</div><div class="plan-name">مكتب المحاماة</div><div class="plan-description">باقة مخططة تجمع فريق المكتب في اشتراك واحد للبحث القضائي.</div><div class="plan-price">199 <small>ريالًا / شهريًا</small></div><div class="plan-annual">أو 1,990 ريالًا سنويًا</div><div class="plan-rule"></div><div class="plan-feature">حتى 5 مستخدمين</div><div class="plan-feature">مزايا الباقة الفردية للفريق</div><div class="plan-feature">حساب مستقل لكل مستخدم</div><div class="plan-feature">مخصصة للعمل داخل المكتب</div><div class="plan-tag">قريبًا · باقة مخططة</div></div>
 </div>''', unsafe_allow_html=True)
+    st.markdown('<div class="plans-action-spacer"></div>', unsafe_allow_html=True)
     _, action_column, _ = st.columns([1, 2, 1])
     with action_column:
         interest_button("plans_interest")
