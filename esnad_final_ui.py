@@ -12,6 +12,7 @@ import streamlit as st
 
 from search_engine import LegalSearchEngine
 from dispute_classifier import DISPUTE_LABELS
+from outcome_classifier import classify_outcome
 
 
 st.set_page_config(
@@ -81,8 +82,23 @@ st.markdown(
         border: 0 !important;
         outline: 0 !important;
         box-shadow: none !important;
+        -webkit-text-fill-color: #f2ecdf !important;
+        caret-color: #d8ba7f !important;
+        opacity: 1 !important;
     }
-    div[data-testid="stTextInput"] input::placeholder {color: #8f93a1;}
+    div[data-testid="stTextInput"] input::placeholder {
+        color: #8f93a1 !important;
+        -webkit-text-fill-color: #8f93a1 !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stTextInput"] input:-webkit-autofill,
+    div[data-testid="stTextInput"] input:-webkit-autofill:hover,
+    div[data-testid="stTextInput"] input:-webkit-autofill:focus {
+        -webkit-text-fill-color: #f2ecdf !important;
+        -webkit-box-shadow: 0 0 0 1000px #11192b inset !important;
+        box-shadow: 0 0 0 1000px #11192b inset !important;
+        caret-color: #d8ba7f !important;
+    }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"] {display: none !important;}
     div[data-testid="stButton"] button {
         background: #151c2e;
@@ -454,13 +470,22 @@ def result_label(number: int) -> str:
     return RESULT_LABELS.get(number, f"النتيجة رقم {number}")
 
 
+def effective_outcome_category(hit: dict) -> str:
+    """Prefer an explicit ruling outcome over a stored broad 'other' label."""
+    saved_category = hit.get("outcome_category", "other")
+    if saved_category != "other":
+        return saved_category
+    inferred_category = classify_outcome(hit.get("verdict"))
+    return inferred_category if inferred_category != "other" else "other"
+
+
 def show_result(hit: dict, number: int) -> None:
     source = "الأحكام التجارية السعودية"
     label = result_label(number)
     judgment_number = content(hit.get("judgment_number"))
     facts = content(hit.get("facts"))
     summary = content(hit.get("summary"))
-    outcome_category = hit.get("outcome_category", "other")
+    outcome_category = effective_outcome_category(hit)
     outcome_label = OUTCOME_LABELS.get(outcome_category, OUTCOME_LABELS["other"])
     dispute_labels = [
         DISPUTE_LABELS[item]
@@ -613,7 +638,7 @@ if query:
             unsafe_allow_html=True,
         )
 
-        outcome_counts = Counter(hit.get("outcome_category", "other") for hit in results)
+        outcome_counts = Counter(effective_outcome_category(hit) for hit in results)
         available_categories = [
             category for category in OUTCOME_LABELS if outcome_counts.get(category, 0) > 0
         ]
@@ -649,7 +674,7 @@ if query:
             else [
                 hit
                 for hit in results
-                if hit.get("outcome_category", "other") == selected_outcome
+                if effective_outcome_category(hit) == selected_outcome
             ]
         )
 
